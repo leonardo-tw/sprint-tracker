@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Sprint Planning Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #3b82f6;
+            --background-color: #f1f5f9;
+            --card-background: #ffffff;
+            --text-color: #1e293b;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .project-input-container input {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            margin-right: 12px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .project-input-container input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .project-item {
+            display: inline-block;
+            background-color: #e0f2fe;
+            padding: 8px 16px;
+            margin: 6px;
+            border-radius: 20px;
+            border: 2px solid #bae6fd;
+            transition: all 0.2s ease;
+        }
+
+        .project-item:hover {
+            background-color: #bae6fd;
+        }
+
+        .delete-project {
+            margin-left: 8px;
+            color: #ef4444;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .week-title {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+
+        .stat-item {
+            flex: 1;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+            border-radius: var(--border-radius);
+            border: 2px solid #bfdbfe;
+        }
+
+        .stat-item h3 {
+            color: var(--primary-color);
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .stat-item p {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .error {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .project-hours {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .chart-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-top: 30px;
+        }
+
+        .chart-container canvas {
+            max-height: 400px;
+        }
+
+        @media (max-width: 768px) {
+            .stats {
+                flex-direction: column;
+            }
+            
+            .project-input-container input,
+            button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Sprint Planning Tracker</h1>
+    </div>
+
+    <div class="card project-input-container">
+        <input type="text" id="projectName" placeholder="Nome progetto">
+        <button onclick="addProject()">Aggiungi Progetto</button>
+        <div id="errorMessage" class="error"></div>
+        <div class="project-list" id="projectList"></div>
+    </div>
+
+    <div class="card week-container">
+        <h2 class="week-title">Settimana 1</h2>
+        <table id="week1"></table>
+    </div>
+
+    <div class="card week-container">
+        <h2 class="week-title">Settimana 2</h2>
+        <table id="week2"></table>
+    </div>
+
+    <div class="stats">
+        <div class="stat-item">
+            <h3>Ore Totali Pianificate</h3>
+            <p id="totalHours">0</p>
+        </div>
+        <div class="stat-item">
+            <h3>Story Points Calcolati</h3>
+            <p id="totalStoryPoints">0</p>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h2 class="week-title">Analisi dei Progetti</h2>
+        <canvas id="projectChart"></canvas>
+    </div>
+
+    <script>
+        // [Lo stesso codice JavaScript precedente rimane invariato]
+        let projects = [];
+
+        function initializeTables() {
+            const days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
+            const hours = Array.from({length: 9}, (_, i) => `${i + 9}:00 - ${i + 10}:00`);
+            
+            ['week1', 'week2'].forEach(weekId => {
+                const table = document.getElementById(weekId);
+                let headerRow = '<tr><th>Orario</th>';
+                days.forEach(day => {
+                    headerRow += `<th>${day}</th>`;
+                });
+                headerRow += '</tr>';
+                table.innerHTML = headerRow;
+
+                hours.forEach(hour => {
+                    let row = `<tr><td>${hour}</td>`;
+                    days.forEach(day => {
+                        const cellId = `${weekId}-${day}-${hour}`;
+                        row += `<td><select onchange="updateStats()" id="${cellId}">
+                                    <option value="">-</option>
+                                    ${getProjectOptions()}
+                                </select></td>`;
+                    });
+                    row += '</tr>';
+                    table.innerHTML += row;
+                });
+            });
+        }
+
+        function getProjectOptions() {
+            return projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        }
+
+        function addProject() {
+            const name = document.getElementById('projectName').value.trim();
+            const errorElement = document.getElementById('errorMessage');
+            
+            if (!name) {
+                errorElement.textContent = 'Inserisci un nome per il progetto';
+                return;
+            }
+
+            if (projects.some(p => p.name === name)) {
+                errorElement.textContent = 'Esiste già un progetto con questo nome';
+                return;
+            }
+
+            errorElement.textContent = '';
+            projects.push({ 
+                name,
+                hours: 0
+            });
+            
+            updateProjectList();
+            updateSelects();
+            document.getElementById('projectName').value = '';
+        }
+
+        function deleteProject(projectName) {
+            projects = projects.filter(p => p.name !== projectName);
+            updateProjectList();
+            updateSelects();
+            updateStats();
+        }
+
+        function updateProjectList() {
+            const list = document.getElementById('projectList');
+            list.innerHTML = projects.map(p => 
+                `<div class="project-item">
+                    ${p.name}
+                    <div class="project-hours">${p.hours} ore pianificate</div>
+                    <span class="delete-project" onclick="deleteProject('${p.name}')">&times;</span>
+                </div>`
+            ).join('');
+        }
+
+        function updateSelects() {
+            const selects = document.querySelectorAll('select');
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = `<option value="">-</option>${getProjectOptions()}`;
+                select.value = currentValue;
+            });
+        }
+
+        function updateStats() {
+            let projectHours = {};
+            let totalHours = 0;
+
+            projects.forEach(p => p.hours = 0);
+
+            ['week1', 'week2'].forEach(weekId => {
+                const selects = document.querySelectorAll(`#${weekId} select`);
+                selects.forEach(select => {
+                    if (select.value) {
+                        projectHours[select.value] = (projectHours[select.value] || 0) + 1;
+                        const project = projects.find(p => p.name === select.value);
+                        if (project) {
+                            project.hours++;
+                        }
+                        totalHours++;
+                    }
+                });
+            });
+
+            document.getElementById('totalHours').textContent = `${totalHours} ore`;
+            const totalSP = Math.ceil(totalHours / 8);
+            document.getElementById('totalStoryPoints').textContent = `${totalSP} SP`;
+
+            updateProjectList();
+            updateChart(projectHours);
+        }
+
+        function updateChart(projectHours) {
+            const ctx = document.getElementById('projectChart').getContext('2d');
+            
+            if (window.projectChart) {
+                window.projectChart.destroy();
+            }
+
+            const projectData = projects.filter(p => p.hours > 0);
+
+            window.projectChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: projectData.map(p => p.name),
+                    datasets: [{
+                        label: 'Ore Pianificate',
+                        data: projectData.map(p => p.hours),
+                        backgroundColor: 'rgba(37, 99, 235, 0.5)',
+                        borderColor: 'rgba(37, 99, 235, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'Story Points (calcolati)',
+                        data: projectData.map(p => Math.ceil(p.hours / 8) * 8),
+                        backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Ore'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        initializeTables();
+    </script>
+</body>
+</html>
